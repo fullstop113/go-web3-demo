@@ -1,13 +1,16 @@
 package router
 
 import (
+	"time"
+
 	"github.com/fullstop113/go-web3-demo/controller"
 	"github.com/fullstop113/go-web3-demo/middleware"
 	"github.com/gin-gonic/gin"
 )
 
 func InitRouter() *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+	r.Use(middleware.RequestID(), middleware.RequestLogger(), middleware.Recovery())
 
 	r.GET("/healthz", func(c *gin.Context) {
 		c.JSON(200, gin.H{"ok": true})
@@ -24,6 +27,20 @@ func InitRouter() *gin.Engine {
 		private.Use(middleware.JWTAuth())
 		{
 			private.GET("/getUserInfo", controller.GetUserInfo)
+		}
+
+		article := apiV1.Group("/articles")
+		{
+			article.GET("", controller.ListArticles)
+			article.GET("/:id", controller.GetArticle)
+		}
+
+		privateArticle := apiV1.Group("/articles")
+		privateArticle.Use(middleware.JWTAuth(), middleware.RateLimit(30, time.Minute))
+		{
+			privateArticle.POST("", controller.CreateArticle)
+			privateArticle.PUT("/:id", controller.UpdateArticle)
+			privateArticle.DELETE("/:id", controller.DeleteArticle)
 		}
 	}
 	return r

@@ -5,16 +5,19 @@ import (
 )
 
 const (
-	CodeOK = 0
-	CodeInvalid = 10001
-	CodeAuth = 10002
-	CodeServer = 10003
+	CodeOK        = 0
+	CodeInvalid   = 10001
+	CodeAuth      = 10002
+	CodeServer    = 10003
+	CodeForbidden = 10004
+	CodeNotFound  = 10005
+	CodeRateLimit = 10006
 )
 
 func OK(c *gin.Context, data interface{}) {
 	c.JSON(200, Response{
 		Code: CodeOK,
-		Msg: "success",
+		Msg:  "success",
 		Data: data,
 	})
 }
@@ -22,6 +25,6 @@ func OK(c *gin.Context, data interface{}) {
 func Fail(c *gin.Context, httpStatus int, code int, msg string) {
 	c.JSON(httpStatus, Response{
 		Code: code,
-		Msg: msg,
+		Msg:  msg,
 	})
 }

@@ -15,6 +15,11 @@ func InitDB() {
 		log.Fatal(err)
 	}
 	DB = db
+
+	// 初始化数据库
+	if err := DB.AutoMigrate(&User{}, &Article{}); err != nil {
+		log.Fatal(err)
+	}
 }
 
 const Name = "model"
