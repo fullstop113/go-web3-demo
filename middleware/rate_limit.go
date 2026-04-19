@@ -10,7 +10,7 @@ import (
 )
 
 type clientWindow struct {
-	count     int
+	count int
 	windowEnd time.Time
 }
 
@@ -21,7 +21,7 @@ func RateLimit(maxRequests int, window time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if maxRequests <= 0 || window <= 0 {
 			c.Next()
-			return
+			return 
 		}
 
 		now := time.Now()
@@ -41,9 +41,8 @@ func RateLimit(maxRequests int, window time.Duration) gin.HandlerFunc {
 		if !allowed {
 			utils.Fail(c, http.StatusTooManyRequests, utils.CodeRateLimit, "too many requests")
 			c.Abort()
-			return
+			return 
 		}
-
 		c.Next()
 	}
 }

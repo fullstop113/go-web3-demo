@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -35,12 +36,12 @@ func CreateArticle(c *gin.Context) {
 
 	userIDValue, ok := c.Get("user_id")
 	if !ok {
-		utils.Fail(c, http.StatusUnauthorized, utils.CodeAuth, "unauthoried")
+		utils.Fail(c, http.StatusUnauthorized, utils.CodeAuth, "unauthorized")
 		return
 	}
 	userID, ok := userIDValue.(uint)
 	if !ok {
-		utils.Fail(c, http.StatusUnauthorized, utils.CodeAuth, "unauthoried")
+		utils.Fail(c, http.StatusUnauthorized, utils.CodeAuth, "unauthorized")
 		return
 	}
 	article := model.Article{
@@ -59,35 +60,27 @@ func CreateArticle(c *gin.Context) {
 func ListArticles(c *gin.Context) {
 	page := parsePositiveInt(c.DefaultQuery("page", "1"), 1)
 	pageSize := parsePositiveInt(c.DefaultQuery("page_size", "10"), 10)
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	var total int64
+	if err := model.DB.Model(&model.Article{}).Count(&total).Error; err != nil {
+		utils.Fail(c, http.StatusInternalServerError, utils.CodeServer, "query articles failed")
+		return
+	}
+	var articles []model.Article
+	offset := (page - 1) * pageSize
+	if err := model.DB.Order("id desc").Offset(offset).Limit(pageSize).Find(&articles).Error; err != nil {
+		utils.Fail(c, http.StatusInternalServerError, utils.CodeInvalid, "query articles failed")
+		return
+	}
+	utils.OK(c, gin.H{
+		"list": articles,
+		"page": page,
+		"page_size": pageSize,
+		"total": total,
+	})
 }
-
-// func ListArticles(c *gin.Context) {
-// 	page := parsePositiveInt(c.DefaultQuery("page", "1"), 1)
-// 	pageSize := parsePositiveInt(c.DefaultQuery("page_size", "10"), 10)
-// 	if pageSize > 100 {
-// 		pageSize = 100
-// 	}
-
-// 	var total int64
-// 	if err := model.DB.Model(&model.Article{}).Count(&total).Error; err != nil {
-// 		utils.Fail(c, http.StatusInternalServerError, utils.CodeServer, "query articles failed")
-// 		return
-// 	}
-
-// 	var articles []model.Article
-// 	offset := (page - 1) * pageSize
-// 	if err := model.DB.Order("id desc").Offset(offset).Limit(pageSize).Find(&articles).Error; err != nil {
-// 		utils.Fail(c, http.StatusInternalServerError, utils.CodeServer, "query articles failed")
-// 		return
-// 	}
-
-// 	utils.OK(c, gin.H{
-// 		"list":      articles,
-// 		"page":      page,
-// 		"page_size": pageSize,
-// 		"total":     total,
-// 	})
-// }
 
 func GetArticle(c *gin.Context) {
 	var article model.Article
@@ -99,7 +92,6 @@ func GetArticle(c *gin.Context) {
 		utils.Fail(c, http.StatusInternalServerError, utils.CodeServer, "query article failed")
 		return
 	}
-
 	utils.OK(c, article)
 }
 
@@ -109,7 +101,6 @@ func UpdateArticle(c *gin.Context) {
 		utils.Fail(c, http.StatusUnauthorized, utils.CodeAuth, "unauthorized")
 		return
 	}
-
 	var article model.Article
 	if err := model.DB.First(&article, c.Param("id")).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -123,13 +114,11 @@ func UpdateArticle(c *gin.Context) {
 		utils.Fail(c, http.StatusForbidden, utils.CodeForbidden, "forbidden")
 		return
 	}
-
 	var req UpdateArticleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.Fail(c, http.StatusBadRequest, utils.CodeInvalid, "invalid request body")
+		utils.Fail(c, http.StatusBadRequest, utils.CodeInvalid, "invaild requrest body")
 		return
 	}
-
 	if req.Title != nil {
 		title := strings.TrimSpace(*req.Title)
 		if title == "" {
@@ -141,7 +130,7 @@ func UpdateArticle(c *gin.Context) {
 	if req.Content != nil {
 		content := strings.TrimSpace(*req.Content)
 		if content == "" {
-			utils.Fail(c, http.StatusBadRequest, utils.CodeInvalid, "content cannot be empty")
+			utils.Fail(http.StatusBadRequest, utils.CodeInvalid, "content not be empty")
 			return
 		}
 		article.Content = content
@@ -154,12 +143,10 @@ func UpdateArticle(c *gin.Context) {
 		}
 		article.Status = status
 	}
-
 	if err := model.DB.Save(&article).Error; err != nil {
 		utils.Fail(c, http.StatusInternalServerError, utils.CodeServer, "update article failed")
 		return
 	}
-
 	utils.OK(c, article)
 }
 
@@ -183,12 +170,10 @@ func DeleteArticle(c *gin.Context) {
 		utils.Fail(c, http.StatusForbidden, utils.CodeForbidden, "forbidden")
 		return
 	}
-
 	if err := model.DB.Delete(&article).Error; err != nil {
 		utils.Fail(c, http.StatusInternalServerError, utils.CodeServer, "delete article failed")
 		return
 	}
-
 	utils.OK(c, gin.H{"deleted": true})
 }
 
