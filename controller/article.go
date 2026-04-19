@@ -129,7 +129,7 @@ func UpdateArticle(c *gin.Context) {
 	if req.Content != nil {
 		content := strings.TrimSpace(*req.Content)
 		if content == "" {
-			utils.Fail(http.StatusBadRequest, utils.CodeInvalid, "content not be empty")
+			utils.Fail(c, http.StatusBadRequest, utils.CodeInvalid, "content not be empty")
 			return
 		}
 		article.Content = content
