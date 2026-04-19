@@ -18,7 +18,7 @@ func Load() (*Config, error) {
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		HTTPAddr: getEnv("HTTP_ADDR", "8080"),
+		HTTPAddr: getEnv("HTTP_ADDR", ":8080"),
 		DBDSN: getEnv("DB_DSN", "app_db"),
 		JWTSecret: os.Getenv("JWT_SECRET"),
 	}
